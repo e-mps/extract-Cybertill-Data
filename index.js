@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const port = process.env.PORT || 3434;
 const path = require('path');
-const genCsv = require('./Services/cybertill').genCsv;
+const groupByBrand = require('./Services/cybertill').groupByBrand;
 var cron = require('node-cron');
 
 const uploadFile = require('./Services/Auth/google-auth').uploadFile
@@ -40,7 +40,8 @@ app.get('/', (req, res) => {
 
 // Run without cron
 // let main = async() => {
-//     const data = await genCsv()
+//     const data = await groupByBrand()
+//     // console.log(data)
 //                     .then(await uploadFile())
 // }
 // main()
