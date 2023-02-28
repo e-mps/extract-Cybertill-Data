@@ -7,7 +7,7 @@ const CLIENT_ID = '643899119539-kl3jfr1ce8ffs5r06agi3vu5s4v26m37.apps.googleuser
 const CLIENT_SECRET = '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';
 const REDIRECT_URI = 'https://developers.google.com/oauthplayground';
 
-const REFRESH_TOKEN = '1//04aSKeXuX3eLJCgYIARAAGAQSNwF-L9IrCv_wL9AFHXX7040XIenNFWh1Ua6NABzJAhtSxcgLXpZCmwb2nCgyxWjU5XeS44449Vc';
+const REFRESH_TOKEN = '1//04oMoW2F58Q6UCgYIARAAGAQSNwF-L9Ir6hFadbYY-ZqwchPF5Hrd8DmVAYDPtht6qho5B7Cg0HQA2dtZNMlJDKEaWJUNk3FzSjc';
 
 // Initialise oauth 2 client
 const oauth2Client = new OAuth2Client(
@@ -86,3 +86,15 @@ let uploadFile = async() => {
 module.exports = {
   uploadFile
 };
+
+
+/*
+Colour: WHT/BLUE/RED/GUM / Size: size 38
+Colour: MT BLK/BLACK
+Colour: ALLUMINIUM/RUTHENIUM
+Colour: BLUE WHITE
+Colour: AMBER GOLD/GUM / Size: size 6
+Colour: BLACK / Size: M
+Colour: BLACK / Size: size 6
+
+*/

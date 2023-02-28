@@ -9,76 +9,162 @@ let excel = require('excel4node');
 // Create a new instance of a Workbook class
 var workbook = new excel.Workbook();
 
+// Clean the size format
+const cleanSizeFormat = (format) => {
+  const sizeRegex = /\d+(\.\d+)?/;
+  const cmRegex = /cm/i;
+  const mlRegex = /ml/i;
+
+  let cleanedFormat = format.trim().toLowerCase();
+
+  if (cleanedFormat.startsWith('size') || cleanedFormat.startsWith('siz ')) {
+    cleanedFormat = cleanedFormat.replace(/(size|siz)\s*/, '');
+  }
+
+  if (cleanedFormat.endsWith('ml')) {
+    cleanedFormat = cleanedFormat.replace(mlRegex, '');
+  } else if (cleanedFormat.endsWith('cm')) {
+    cleanedFormat = cleanedFormat.replace(cmRegex, '');
+  }
+
+  const match = cleanedFormat.match(sizeRegex);
+
+  return match ? match[0] : 'No Size';
+};
 
 // Fetch cybertill data
 const getCybertillData = async () => {
   const data = await getData();
+
+  const sizeFormats = new Set();
+  const regex = /Colour:\s*\w+\s*\/\s*Size:\s*([\w\s]+)\s*/i;
+
+  data.forEach(item => {
+    const match = item.Size.match(regex);
+    const format = match ? cleanSizeFormat(match[1]) : 'No Size';
+    const colorRegex = /Colour:\s*(\w+)\s*\/\s*Size:/i;
+    const colorMatch = item.Size.match(colorRegex);
+    const color = colorMatch ? colorMatch[1] : 'No Color';
+    sizeFormats.add(format);
+    item.Size = format;
+    item.Colour = color;
+});
+ 
+  // console.table(Array.from(sizeFormats));
+  // console.log(data)
+
   return data;
 };
 
-// Transform data to desired output
-const transformData = async () => {
-  const data = await getCybertillData();
-  return data.map(obj => {
-    const colorAndSize = obj.Size ? obj.Size.split('/') : [];
-    const colorItem = colorAndSize.find(item => item.trim().startsWith('Colour:'));
-    const sizeItem = colorAndSize.find(item => item.trim().startsWith('Size:'));
-    let color = colorItem ? colorItem.split(':')[1].trim() : '';
-    let size;
-    // let size = sizeItem ? sizeItem.split(':')[1].trim() : '';
-    // size = Number(size.match(/\d+/));
-    // console.log(obj)
-    let {ID, Size, Description, Colour, Barcode, SKU, RRP, Brand} = obj
-    return { size, Description, color, Barcode, SKU, RRP, Brand };
-  });
-};
+// const groupByIdGetMinMaxSize = async () => {
+//   const data = await getCybertillData();
 
+//   const groupedData = _.groupBy(data, 'ID');
+
+//   const brands = _.uniqBy(data, 'Brand');
+//   const brandNames = _.map(brands, 'Brand').sort();
+
+//   brandNames.forEach((brandName) => {
+//     const brandData = groupedData[brandName] || [];
+//     const sheetName = brandName.toUpperCase().substring(0, 31);
+
+//     // Create a new worksheet for the current brand
+//     const worksheet = workbook.addWorksheet(sheetName);
+
+//     // Set column headers
+//     worksheet.cell(1, 1).string('Size');
+//     worksheet.cell(1, 2).string('Description');
+//     worksheet.cell(1, 3).string('Colour');
+//     worksheet.cell(1, 4).string('Barcode');
+//     worksheet.cell(1, 5).string('SKU');
+//     worksheet.cell(1, 6).string('RRP');
+
+//     let rowIndex = 2;
+
+//     // Get the minimum and maximum sizes for each ID
+//     const minMaxSizes = _(brandData)
+//       .groupBy('ID')
+//       .map((groupedItems, id) => ({
+//         ID: id,
+//         minSize: _.minBy(groupedItems, (item) => parseFloat(item.Size)),
+//         maxSize: _.maxBy(groupedItems, (item) => parseFloat(item.Size)),
+//       }))
+//       .value();
+
+//     // Add each item to the worksheet
+//     minMaxSizes.forEach((item) => {
+//       const { ID, minSize, maxSize } = item;
+
+//       worksheet.cell(rowIndex, 1).string(`${minSize.Size} - ${maxSize.Size}`);
+//       worksheet.cell(rowIndex, 2).string(minSize.Description);
+//       worksheet.cell(rowIndex, 3).string(minSize.Colour);
+//       worksheet.cell(rowIndex, 4).string(minSize.Barcode);
+//       worksheet.cell(rowIndex, 5).string(minSize.SKU);
+//       worksheet.cell(rowIndex, 6).string(minSize.RRP);
+//       worksheet.cell(rowIndex, 7).string(minSize.Brand);
+
+//       rowIndex++;
+//     });
+//   });
+//   console.log(`${Object.keys(groupedData).length} worksheets created.`);
+//   // console.log(minMaxSizes)
+
+//   // Write the workbook to a file
+//   workbook.write('cybertill-data.xlsx');
+//   console.log('Workbook written to successfully!')
+// };
 
 // group output by Brand and make each brand a worksheet
-const groupByBrand = async () => {
-  const data = await transformData();
+const groupByIdGetMinMaxSize = async () => {
+  const data = await getCybertillData();
 
-  const groupedData = _.groupBy(data, 'Brand');
-  const brands = Object.keys(groupedData);
+  // Group data by ID and get minimum and maximum size for each group
+  const groupedById = _.groupBy(data, 'ID');
+  const minMaxSizes = _.map(groupedById, (group) => {
+    const minSize = _.minBy(group, (item) => parseFloat(item.Size));
+    const maxSize = _.maxBy(group, (item) => parseFloat(item.Size));
+    const sizeRange = `${minSize?.Size || 'No Size'} - ${maxSize?.Size || 'No Size'}`;
+    return {
+      ...minSize,
+      Size: sizeRange,
+    };
+  });
+  // console.log(minMaxSizes)
 
-  brands.forEach((brand) => {
-    // Create a new worksheet for each brand
+  // Group data by brand
+  const groupedByBrand = _.groupBy(minMaxSizes, 'Brand');
+  const brands = Object.keys(groupedByBrand).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())); //sort the brands array in a case-sensitive way
+
+  brands.forEach(brand => {
+    // create a new worksheet for each brand
     const worksheet = workbook.addWorksheet(brand);
 
     // Write the headers to the worksheet
-    const headers = Object.keys(groupedData[brand][0]);
+    const headers = Object.keys(groupedByBrand[brand][0]).filter(header => header !== 'Brand' && header !== 'ID');
     headers.forEach((header, i) => {
       worksheet.cell(1, i + 1).string(header);
     });
 
     // Write the data to the worksheet
-    groupedData[brand].forEach((item, rowIndex) => {
-      Object.values(item).forEach((value, columnIndex) => {
-        if (!isNaN(value)) { // Check if the value is numeric before converting
+    groupedByBrand[brand].forEach((item, rowIndex) => {
+      Object.keys(item).filter(key => key !== 'Brand' && key !== 'ID').forEach((key, columnIndex) => {
+        const value = item[key];
+        // Check if the value is numeric before converting
+        if(!isNaN(value)) {
           worksheet.cell(rowIndex + 2, columnIndex + 1).number(Number(value));
         } else {
-          worksheet.cell(rowIndex + 2, columnIndex + 1).string(value);
+          worksheet.cell(rowIndex + 2, columnIndex + 1).string(value)
         }
-      });
-    });
-  });
+      })
+    })
+  })
 
-  // Write the workbook to a file
+  //   // Write the workbook to a file
   workbook.write('cybertill-data.xlsx');
+  console.log(`All worksheets created successfully!`);
 };
 
-// Generate csv
-// const genCsv = async () => {
-//     const data = await transformData();
-//   // console.log(data);
-//   const fields = ['size', 'Description', 'color', 'Barcode', 'SKU', 'RRP'];
-//   const opts = { fields };
-//   const parser = new Parser(opts);
-//   const csv = parser.parse(data);
-//   fs.writeFileSync('./sample.csv', csv);
-//   console.log('CSV file generated succesfully!');
-// };
 
 module.exports = {
-  groupByBrand,
+  groupByIdGetMinMaxSize,
 };

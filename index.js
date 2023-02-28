@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const port = process.env.PORT || 3434;
 const path = require('path');
-const groupByBrand = require('./Services/cybertill').groupByBrand;
+const groupByIdGetMinMaxSize = require('./Services/cybertill').groupByIdGetMinMaxSize;
 var cron = require('node-cron');
 
 const uploadFile = require('./Services/Auth/google-auth').uploadFile
@@ -40,8 +40,7 @@ app.get('/', (req, res) => {
 
 // Run without cron
 // let main = async() => {
-//     const data = await groupByBrand()
-//     // console.log(data)
+//     const data = await groupByIdGetMinMaxSize()
 //                     .then(await uploadFile())
 // }
 // main()
@@ -49,7 +48,7 @@ app.get('/', (req, res) => {
 // Run with cron, every 3 hours between 8-5 Uk time
 cron.schedule('0 5-17/3 * * *', () => {
     let main = async() => {
-        const data = await genCsv()
+        const data = await groupByIdGetMinMaxSize()
                         .then(await uploadFile())
     }
     main()
