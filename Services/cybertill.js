@@ -56,65 +56,6 @@ const getCybertillData = async () => {
   return data;
 };
 
-// const groupByIdGetMinMaxSize = async () => {
-//   const data = await getCybertillData();
-
-//   const groupedData = _.groupBy(data, 'ID');
-
-//   const brands = _.uniqBy(data, 'Brand');
-//   const brandNames = _.map(brands, 'Brand').sort();
-
-//   brandNames.forEach((brandName) => {
-//     const brandData = groupedData[brandName] || [];
-//     const sheetName = brandName.toUpperCase().substring(0, 31);
-
-//     // Create a new worksheet for the current brand
-//     const worksheet = workbook.addWorksheet(sheetName);
-
-//     // Set column headers
-//     worksheet.cell(1, 1).string('Size');
-//     worksheet.cell(1, 2).string('Description');
-//     worksheet.cell(1, 3).string('Colour');
-//     worksheet.cell(1, 4).string('Barcode');
-//     worksheet.cell(1, 5).string('SKU');
-//     worksheet.cell(1, 6).string('RRP');
-
-//     let rowIndex = 2;
-
-//     // Get the minimum and maximum sizes for each ID
-//     const minMaxSizes = _(brandData)
-//       .groupBy('ID')
-//       .map((groupedItems, id) => ({
-//         ID: id,
-//         minSize: _.minBy(groupedItems, (item) => parseFloat(item.Size)),
-//         maxSize: _.maxBy(groupedItems, (item) => parseFloat(item.Size)),
-//       }))
-//       .value();
-
-//     // Add each item to the worksheet
-//     minMaxSizes.forEach((item) => {
-//       const { ID, minSize, maxSize } = item;
-
-//       worksheet.cell(rowIndex, 1).string(`${minSize.Size} - ${maxSize.Size}`);
-//       worksheet.cell(rowIndex, 2).string(minSize.Description);
-//       worksheet.cell(rowIndex, 3).string(minSize.Colour);
-//       worksheet.cell(rowIndex, 4).string(minSize.Barcode);
-//       worksheet.cell(rowIndex, 5).string(minSize.SKU);
-//       worksheet.cell(rowIndex, 6).string(minSize.RRP);
-//       worksheet.cell(rowIndex, 7).string(minSize.Brand);
-
-//       rowIndex++;
-//     });
-//   });
-//   console.log(`${Object.keys(groupedData).length} worksheets created.`);
-//   // console.log(minMaxSizes)
-
-//   // Write the workbook to a file
-//   workbook.write('cybertill-data.xlsx');
-//   console.log('Workbook written to successfully!')
-// };
-
-// group output by Brand and make each brand a worksheet
 const groupByIdGetMinMaxSize = async () => {
   const data = await getCybertillData();
 
@@ -159,8 +100,22 @@ const groupByIdGetMinMaxSize = async () => {
     })
   })
 
-  //   // Write the workbook to a file
-  workbook.write('cybertill-data.xlsx');
+  const filename = 'cybertill-data.xlsx';
+
+  // Delete the existing file before generating a new one
+  try {
+    fs.unlinkSync(filename);
+    console.log(`Deleted ${filename}`);
+  } catch (err) {
+    // If the file does not exist or is already deleted, ignore the error
+    if (err.code !== 'ENOENT') {
+      console.error(err);
+      return;
+    }
+  }
+
+  // Write the workbook to a file
+  workbook.write(filename);
   console.log(`All worksheets created successfully!`);
 };
 

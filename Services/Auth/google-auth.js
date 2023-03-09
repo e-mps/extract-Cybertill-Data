@@ -7,7 +7,7 @@ const CLIENT_ID = '643899119539-kl3jfr1ce8ffs5r06agi3vu5s4v26m37.apps.googleuser
 const CLIENT_SECRET = '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';
 const REDIRECT_URI = 'https://developers.google.com/oauthplayground';
 
-const REFRESH_TOKEN = '1//04oMoW2F58Q6UCgYIARAAGAQSNwF-L9Ir6hFadbYY-ZqwchPF5Hrd8DmVAYDPtht6qho5B7Cg0HQA2dtZNMlJDKEaWJUNk3FzSjc';
+const REFRESH_TOKEN = '1//04r9N5UdrQufsCgYIARAAGAQSNwF-L9IrstnusWtJbxgekIhj4knXT0RUB3u8yJoNto9N2D0tY7gphURHzHPSRaEO3By2PxUfpjE';
 
 // Initialise oauth 2 client
 const oauth2Client = new OAuth2Client(
@@ -25,76 +25,47 @@ const drive = google.drive({
   auth: oauth2Client
 });
 
-const filePath = path.join(process.cwd(), 'cybertill-data.xlsx');
+const fileName = 'cybertill-data.xlsx';
+const parentId = '10OpHE0VCpeGxCeEl8sTeXeM4okn9ogxY';
 
-// Upload
-let uploadFile = async() => {
+let uploadFile = async () => {
   try {
     // Check if file already exists
-    const query = "name='cybertill-data.xlsx' and trashed = false";
+    const query = `name='${fileName}' and trashed=false and parents in '${parentId}'`;
     const response = await drive.files.list({
       q: query,
       fields: 'nextPageToken, files(id, name)',
     });
-    const existingFile = response.data.files[0];
+    const existingFiles = response.data.files;
 
-    // If file already exists, update it
-    if (existingFile) {
-      const fileId = existingFile.id;
-      const response = await drive.files.update({
-        fileId: fileId,
-        media: {
-          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          body: fs.createReadStream(filePath)
-        }
-      });
-      console.log(response.data)
-    } else {
-      // If file does not exist, create a new one
-      const response = await drive.files.create({
-        requestBody: {
-          name: `cybertill-data.xlsx`,
-          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          parents: ['10OpHE0VCpeGxCeEl8sTeXeM4okn9ogxY']
-        },
-        media: {
-          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          body: fs.createReadStream(filePath)
-        }
-      });
-      console.log(response.data)
-      console.log(`File ${response.data.name} with ID: ${response.data.id} updated succesfully`)
+    // If file already exists, delete it
+    if (existingFiles.length > 0) {
+      for (let i = 0; i < existingFiles.length; i++) {
+        const fileId = existingFiles[i].id;
+        await drive.files.delete({ fileId });
+        console.log(`Deleted file with ID: ${fileId}`);
+      }
     }
-  } catch(err) {
-    console.log(err.message)
+
+    // Upload new file
+    const filePath = path.join(process.cwd(), fileName);
+    const uploadResponse = await drive.files.create({
+      requestBody: {
+        name: fileName,
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        parents: [parentId]
+      },
+      media: {
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        body: fs.createReadStream(filePath)
+      }
+    });
+    console.log(`File ${uploadResponse.data.name} with ID: ${uploadResponse.data.id} updated successfully`);
+  } catch (err) {
+    console.log(err.message);
   }
 };
-
-// Delete file
-// let deleteFile = async() => {
-//   try {
-//     const response = await drive.files.delete({
-//       fileId: `${fileId}`
-//     });
-//     console.log(response.data, response.status)
-//   } catch(err) {
-//     console.log(err.message)
-//   }
-// }
-
 
 module.exports = {
   uploadFile
 };
-
-
-/*
-Colour: WHT/BLUE/RED/GUM / Size: size 38
-Colour: MT BLK/BLACK
-Colour: ALLUMINIUM/RUTHENIUM
-Colour: BLUE WHITE
-Colour: AMBER GOLD/GUM / Size: size 6
-Colour: BLACK / Size: M
-Colour: BLACK / Size: size 6
-
-*/

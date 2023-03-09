@@ -39,22 +39,22 @@ app.get('/', (req, res) => {
 })
 
 // Run without cron
-// let main = async() => {
-//     const data = await groupByIdGetMinMaxSize()
-//                     .then(await uploadFile())
-// }
-// main()
+let main = async() => {
+    const data = await groupByIdGetMinMaxSize()
+                    .then(await uploadFile())
+}
+main()
 
 // Run with cron, every 3 hours between 8-5 Uk time
-cron.schedule('0 5-17/3 * * *', () => {
-    let main = async() => {
-        const data = await groupByIdGetMinMaxSize()
-                        .then(await uploadFile())
-    }
-    main()
-}, {
-    timezone: "Europe/London"
-})
+// cron.schedule('0 5-17/3 * * *', () => {
+//     let main = async() => {
+//         const data = await groupByIdGetMinMaxSize()
+//                         .then(await uploadFile())
+//     }
+//     main()
+// }, {
+//     timezone: "Europe/London"
+// })
 
 // Server 
 app.listen(port, () => {
